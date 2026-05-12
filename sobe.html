@@ -500,17 +500,17 @@ body {
 
 .btn-add-cat {
   width: 100%;
-  padding: 11px;
-  background: var(--white);
+  padding: 9px;
+  background: transparent;
   border: 1.5px dashed var(--pink-300);
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--pink-500);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12.5px;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .btn-add-cat:hover {
@@ -919,6 +919,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c1" data-name="주거" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c2">
       <div class="cat-name">통신</div>
@@ -927,6 +928,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c2" data-name="통신" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c3">
       <div class="cat-name">AI 구독</div>
@@ -935,6 +937,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c3" data-name="AI 구독" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c4">
       <div class="cat-name">미디어 구독</div>
@@ -943,6 +946,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c4" data-name="미디어 구독" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c5">
       <div class="cat-name">보험</div>
@@ -951,7 +955,10 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c5" data-name="보험" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
+    <div class="custom-list" data-group="fixed"></div>
+    <button class="btn-add-cat" data-group="fixed" type="button">+ 카테고리 추가</button>
   </div>
 
   <!-- 변동 일상 -->
@@ -964,6 +971,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c6" data-name="식비" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c7">
       <div class="cat-name">카페·디저트</div>
@@ -972,6 +980,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c7" data-name="카페·디저트" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c8">
       <div class="cat-name">교통</div>
@@ -980,7 +989,10 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c8" data-name="교통" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
+    <div class="custom-list" data-group="daily"></div>
+    <button class="btn-add-cat" data-group="daily" type="button">+ 카테고리 추가</button>
   </div>
 
   <!-- 변동 라이프 -->
@@ -993,6 +1005,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c9" data-name="꾸밈비" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c10">
       <div class="cat-name">여행·여가</div>
@@ -1001,6 +1014,7 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c10" data-name="여행·여가" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
     <div class="cat-row" data-cat-id="c11">
       <div class="cat-name">자기계발</div>
@@ -1009,7 +1023,10 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c11" data-name="자기계발" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
+    <div class="custom-list" data-group="life"></div>
+    <button class="btn-add-cat" data-group="life" type="button">+ 카테고리 추가</button>
   </div>
 
   <!-- 변동 사회 -->
@@ -1022,15 +1039,13 @@ body {
         <input type="text" inputmode="numeric" class="cat-amount money-fmt" data-cat="c12" data-name="경조사" placeholder="0">
         <span class="cat-amount-unit">원</span>
       </div>
+      <button class="cat-delete" type="button" aria-label="삭제">×</button>
     </div>
+    <div class="custom-list" data-group="social"></div>
+    <button class="btn-add-cat" data-group="social" type="button">+ 카테고리 추가</button>
   </div>
 
-  <!-- 사용자 추가 -->
-  <div class="cat-group custom">
-    <div class="cat-group-title">내가 추가한 항목</div>
-    <div id="custom-list"></div>
-    <button class="btn-add-cat" id="btn-add-cat" type="button">+ 카테고리 추가</button>
-  </div>
+
 </section>
 
 <!-- STEP 3: 진단 결과 -->
@@ -1093,8 +1108,9 @@ body {
 <div class="toast" id="toast">저장됐어요!</div>
 
 <script>
-const STORAGE_KEY = 'pyong_spending_diagnostic_v2';
+const STORAGE_KEY = 'pyong_spending_diagnostic_v3';
 let customCounter = 0;
+const deletedDefaults = new Set();
 
 /* ───── 숫자 콤마 포맷 유틸 ───── */
 function digitsOnly(value) {
@@ -1215,17 +1231,43 @@ rateNum.addEventListener('blur', function() {
   onChange();
 });
 
-/* ───── 카테고리 추가 ───── */
-document.getElementById('btn-add-cat').addEventListener('click', function() {
-  addCustomRow();
+/* ───── 카테고리 추가 / 삭제 ───── */
+// 각 그룹 하단 '+ 카테고리 추가' 버튼들에 이벤트 바인딩
+document.querySelectorAll('.btn-add-cat').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    const group = btn.dataset.group;
+    addCustomRow('', '', group);
+    // 방금 추가한 행의 항목명에 포커스
+    const container = document.querySelector('.custom-list[data-group="' + group + '"]');
+    const lastRow = container && container.lastElementChild;
+    if (lastRow) {
+      const nameInput = lastRow.querySelector('.cat-name-input');
+      if (nameInput) nameInput.focus();
+    }
+  });
 });
 
-function addCustomRow(name, amount) {
+// 모든 × 삭제 버튼 (기본 행 + 커스텀 행) - 이벤트 위임
+document.addEventListener('click', function(e) {
+  if (!e.target.classList.contains('cat-delete')) return;
+  const row = e.target.closest('.cat-row');
+  if (!row) return;
+  const catId = row.dataset.catId || '';
+  // 기본 카테고리 (c1~c12)는 삭제 기록을 남겨 다음에도 숨김 유지
+  if (catId && catId.indexOf('custom-') !== 0) {
+    deletedDefaults.add(catId);
+  }
+  row.remove();
+  onChange();
+});
+
+function addCustomRow(name, amount, groupKey) {
   customCounter++;
   const id = 'custom-' + customCounter;
   const row = document.createElement('div');
   row.className = 'cat-row';
   row.dataset.catId = id;
+  row.dataset.group = groupKey || '';
   row.innerHTML = ''
     + '<input type="text" class="cat-name-input" data-cat-name="' + id + '" placeholder="항목명" value="' + (name || '') + '">'
     + '<div class="cat-bar-wrap"><div class="cat-bar"></div><span class="cat-pct"></span></div>'
@@ -1234,15 +1276,17 @@ function addCustomRow(name, amount) {
     + '<span class="cat-amount-unit">원</span>'
     + '</div>'
     + '<button class="cat-delete" type="button" aria-label="삭제">×</button>';
-  document.getElementById('custom-list').appendChild(row);
+
+  const container = document.querySelector('.custom-list[data-group="' + groupKey + '"]');
+  if (container) {
+    container.appendChild(row);
+  } else {
+    const fallback = document.querySelector('.custom-list');
+    if (fallback) fallback.appendChild(row);
+  }
 
   const amountInput = row.querySelector('.cat-amount');
   if (amount) amountInput.value = formatWithCommas(amount);
-
-  row.querySelector('.cat-delete').addEventListener('click', function() {
-    row.remove();
-    onChange();
-  });
 
   const nameInput = row.querySelector('.cat-name-input');
   nameInput.addEventListener('input', function(e) {
@@ -1440,13 +1484,16 @@ function collectData() {
     rate: parseInt(rateSlider.value, 10) || 20,
     reflect: document.querySelector('[data-field="reflect"]').value || '',
     cats: {},
-    custom: []
+    deleted_defaults: Array.from(deletedDefaults),
+    custom_by_group: { fixed: [], daily: [], life: [], social: [] }
   };
   document.querySelectorAll('.cat-amount').forEach(function(input) {
     if (input.dataset.custom) {
       const row = input.closest('.cat-row');
       const nameInput = row.querySelector('.cat-name-input');
-      data.custom.push({
+      const group = row.dataset.group || 'fixed';
+      if (!data.custom_by_group[group]) data.custom_by_group[group] = [];
+      data.custom_by_group[group].push({
         name: nameInput ? nameInput.value : '',
         amount: parseMoney(input.value)
       });
@@ -1482,8 +1529,27 @@ function loadData() {
       const input = document.querySelector('[data-cat="' + entry[0] + '"]');
       if (input) input.value = entry[1] ? formatWithCommas(entry[1]) : '';
     });
+
+    // 삭제된 기본 카테고리는 DOM에서 제거된 상태로 유지
+    (data.deleted_defaults || []).forEach(function(catId) {
+      const row = document.querySelector('[data-cat-id="' + catId + '"]');
+      if (row) {
+        deletedDefaults.add(catId);
+        row.remove();
+      }
+    });
+
+    // 그룹별 커스텀 행 복원
+    const groupMap = data.custom_by_group || {};
+    Object.keys(groupMap).forEach(function(groupKey) {
+      (groupMap[groupKey] || []).forEach(function(c) {
+        addCustomRow(c.name || '', c.amount || '', groupKey);
+      });
+    });
+
+    // 구버전 데이터 호환 (data.custom 배열)
     (data.custom || []).forEach(function(c) {
-      addCustomRow(c.name || '', c.amount || '');
+      addCustomRow(c.name || '', c.amount || '', 'fixed');
     });
 
     calculateAll();
