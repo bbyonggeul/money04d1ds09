@@ -1597,43 +1597,59 @@ document.getElementById('btn-image').addEventListener('click', function() {
   btn.textContent = '이미지 만드는 중...';
 
   const container = document.querySelector('.container');
-  const progressEl = document.querySelector('.progress');
-  const actionBar = document.querySelector('.action-bar');
 
-  const originalProgressPosition = progressEl.style.position;
-  progressEl.style.position = 'static';
-  actionBar.style.display = 'none';
+  // 현재 스크롤 위치를 저장하고 맨 위로 이동.
+  // (페이지가 아래로 스크롤된 상태에서 캡처하면 상단 ~ 세후 실수령액·목표 저축률 ~ 이
+  //  스크롤된 만큼 잘려나가는 html2canvas 특성 때문에 반드시 최상단에서 캡처)
+  const savedX = window.scrollX || window.pageXOffset || 0;
+  const savedY = window.scrollY || window.pageYOffset || 0;
+  window.scrollTo(0, 0);
 
-  html2canvas(container, {
-    backgroundColor: '#FFFFFF',
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    windowWidth: container.scrollWidth,
-    windowHeight: container.scrollHeight
-  }).then(function(canvas) {
-    progressEl.style.position = originalProgressPosition;
-    actionBar.style.display = '';
-
-    const link = document.createElement('a');
-    const today = new Date();
-    const dateStr = today.getFullYear() + '-' +
-                   String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                   String(today.getDate()).padStart(2, '0');
-    link.download = '이번달-내돈-들여다보기_' + dateStr + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-
+  function finish() {
+    window.scrollTo(savedX, savedY);
     btn.disabled = false;
     btn.textContent = originalText;
-    showToast('이미지로 저장됐어요');
-  }).catch(function(err) {
-    progressEl.style.position = originalProgressPosition;
-    actionBar.style.display = '';
-    btn.disabled = false;
-    btn.textContent = originalText;
-    showToast('저장에 실패했어요. 다시 시도해주세요');
-    console.error(err);
+  }
+
+  // 스크롤이 레이아웃에 반영되도록 두 프레임 기다린 뒤 캡처
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      html2canvas(container, {
+        backgroundColor: '#FFFFFF',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        onclone: function(clonedDoc) {
+          // sticky 진행바를 static으로 풀어 상단 콘텐츠가 가려지지 않게
+          const clonedProgress = clonedDoc.querySelector('.progress');
+          if (clonedProgress) {
+            clonedProgress.style.position = 'static';
+            clonedProgress.style.top = 'auto';
+          }
+          // 버튼 영역은 이미지에서 제외
+          const clonedActionBar = clonedDoc.querySelector('.action-bar');
+          if (clonedActionBar) clonedActionBar.style.display = 'none';
+        }
+      }).then(function(canvas) {
+        const link = document.createElement('a');
+        const today = new Date();
+        const dateStr = today.getFullYear() + '-' +
+                       String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                       String(today.getDate()).padStart(2, '0');
+        link.download = '이번달-내돈-들여다보기_' + dateStr + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        finish();
+        showToast('이미지로 저장됐어요');
+      }).catch(function(err) {
+        finish();
+        showToast('저장에 실패했어요. 다시 시도해주세요');
+        console.error(err);
+      });
+    });
   });
 });
 
