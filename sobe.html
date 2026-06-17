@@ -1637,6 +1637,54 @@ document.getElementById('btn-image').addEventListener('click', async function() 
         // 버튼 영역은 이미지에서 제외
         const a = clonedDoc.querySelector('.action-bar');
         if (a) a.style.display = 'none';
+
+        // ── 핵심: input/textarea를 동일하게 생긴 정적 div로 치환 ──
+        // html2canvas는 input 값(특히 오른쪽 정렬된 긴 숫자, 손글씨 폰트)을 제대로 못 그려서
+        // 캡처 순간에만 일반 텍스트 박스로 바꿔 값이 정확히 보이도록 한다.
+        const liveFields = document.querySelectorAll('.container input, .container textarea');
+        const cloneFields = clonedDoc.querySelectorAll('.container input, .container textarea');
+        const TEXT_PROPS = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'color',
+          'letterSpacing', 'fontVariantNumeric',
+          'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+          'borderBottomWidth', 'borderBottomStyle', 'borderBottomColor'];
+
+        cloneFields.forEach(function(cloneEl, i) {
+          const liveEl = liveFields[i] || cloneEl;
+          const cs = window.getComputedStyle(liveEl);
+          const isTextarea = cloneEl.tagName.toLowerCase() === 'textarea';
+          const hasVal = cloneEl.value != null && String(cloneEl.value).length > 0;
+          const text = hasVal ? cloneEl.value : (isTextarea ? '' : (cloneEl.placeholder || ''));
+          const align = cs.textAlign;
+
+          const div = clonedDoc.createElement('div');
+          div.textContent = text;
+          TEXT_PROPS.forEach(function(prop) { div.style[prop] = cs[prop]; });
+          if (!hasVal && !isTextarea) div.style.color = '#9999A8'; // 미입력 시 placeholder 색
+          div.style.margin = '0';
+          div.style.background = 'transparent';
+          div.style.boxSizing = 'border-box';
+          div.style.width = liveEl.offsetWidth + 'px';
+
+          if (isTextarea) {
+            // 여러 줄: 위에서부터, 자동 줄바꿈
+            div.style.display = 'block';
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordBreak = 'break-word';
+            div.style.lineHeight = cs.lineHeight;
+            div.style.minHeight = liveEl.offsetHeight + 'px';
+          } else {
+            // 한 줄: flex로 수직 가운데 + 정렬 보존
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.justifyContent = align === 'right' ? 'flex-end' : (align === 'center' ? 'center' : 'flex-start');
+            div.style.whiteSpace = 'nowrap';
+            div.style.overflow = 'hidden';
+            div.style.height = liveEl.offsetHeight + 'px';
+            div.style.flexGrow = '0';
+            div.style.flexShrink = '0';
+          }
+          if (cloneEl.parentNode) cloneEl.parentNode.replaceChild(div, cloneEl);
+        });
       }
     });
   }
