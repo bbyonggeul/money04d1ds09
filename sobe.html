@@ -1567,17 +1567,18 @@ document.getElementById('btn-reset').addEventListener('click', function() {
 });
 
 /* ───── 이미지 저장 ─────
- * html2canvas의 알려진 이슈:
- * input 요소의 캡처 시 입력된 .value(property)가 아니라
- * HTML attribute의 value를 읽어 그림. 따라서 캡처 직전에
- * 모든 input과 textarea의 value를 attribute/textContent에 동기화해야
- * 사용자가 입력한 값이 그대로 이미지에 나타남.
+ * html2canvas의 알려진 이슈 대응:
+ * input 요소를 캡처할 때 사용자가 타이핑한 .value를 잘못 읽거나
+ * 누락하는 경우가 모바일에서 특히 자주 발생함.
+ * 이를 회피하기 위해 두 단계로 방어함:
+ *   1) 원본 DOM에서 input.value를 attribute에 동기화 (1차 방어)
+ *   2) html2canvas가 만든 클론 DOM에서 input/textarea를 통째로
+ *      span/div로 교체해서 캡처 (2차 방어, 가장 확실)
  */
 function syncFormValuesToDOM() {
   const restorePoints = { textareas: [] };
 
   document.querySelectorAll('input').forEach(function(input) {
-    // text/number/range 모두 attribute로 반영
     if (input.value !== null && input.value !== undefined) {
       input.setAttribute('value', input.value);
     }
@@ -1585,7 +1586,6 @@ function syncFormValuesToDOM() {
 
   document.querySelectorAll('textarea').forEach(function(t) {
     restorePoints.textareas.push({ el: t, original: t.value });
-    // textarea는 attribute가 아닌 textContent로 캡처되므로
     t.textContent = t.value;
   });
 
@@ -1593,11 +1593,84 @@ function syncFormValuesToDOM() {
 }
 
 function restoreFormValues(restorePoints) {
-  // input은 attribute가 남아있어도 .value는 그대로이므로 별도 복구 불필요
-  // textarea만 textContent를 비우고 value를 복구
   restorePoints.textareas.forEach(function(item) {
     item.el.textContent = '';
     item.el.value = item.original;
+  });
+}
+
+/**
+ * html2canvas가 캡처용으로 만든 클론된 document의 입력 요소들을
+ * 시각적으로 동일한 span/div로 교체.
+ * input 요소 자체를 캡처하는 과정을 우회하므로 모바일에서도 안전.
+ */
+function replaceInputsInClone(clonedDoc) {
+  // 1) text 입력 input들을 span으로 교체
+  const inputSelectors = [
+    'input.money-input',
+    'input.cat-amount',
+    'input.cat-name-input',
+    'input.rate-number-input'
+  ];
+
+  clonedDoc.querySelectorAll(inputSelectors.join(',')).forEach(function(clonedInput) {
+    // 클론에서 값을 못 가져오면 원본 DOM에서 매칭해서 가져옴
+    let value = clonedInput.value || clonedInput.getAttribute('value') || '';
+    if (!value) {
+      let original = null;
+      const ds = clonedInput.dataset || {};
+      if (ds.cat) {
+        original = document.querySelector('input[data-cat="' + ds.cat + '"]');
+      } else if (ds.field) {
+        original = document.querySelector('input[data-field="' + ds.field + '"]');
+      } else if (clonedInput.id) {
+        original = document.getElementById(clonedInput.id);
+      } else if (ds.catName) {
+        original = document.querySelector('input[data-cat-name="' + ds.catName + '"]');
+      }
+      if (original) value = original.value || '';
+    }
+
+    const span = clonedDoc.createElement('span');
+    span.textContent = value;
+    span.className = clonedInput.className; // 같은 클래스 → 같은 CSS 적용
+    span.style.display = 'inline-block';
+    span.style.whiteSpace = 'nowrap';
+    span.style.overflow = 'hidden';
+
+    // rate-number-input은 폭과 밑줄 유지 필요
+    if (clonedInput.classList.contains('rate-number-input')) {
+      span.style.width = '90px';
+      span.style.borderBottom = '2px solid #FBC4D7';
+      span.style.textAlign = 'center';
+    }
+    // cat-name-input도 폭 유지
+    if (clonedInput.classList.contains('cat-name-input')) {
+      span.style.width = '110px';
+      span.style.borderBottom = '1.5px solid #FBC4D7';
+    }
+
+    clonedInput.parentNode.replaceChild(span, clonedInput);
+  });
+
+  // 2) textarea(메모) 교체
+  clonedDoc.querySelectorAll('textarea').forEach(function(clonedTextarea) {
+    let value = clonedTextarea.value || clonedTextarea.textContent || '';
+    if (!value && clonedTextarea.dataset && clonedTextarea.dataset.field) {
+      const original = document.querySelector(
+        'textarea[data-field="' + clonedTextarea.dataset.field + '"]'
+      );
+      if (original) value = original.value || '';
+    }
+
+    const div = clonedDoc.createElement('div');
+    div.textContent = value;
+    div.className = clonedTextarea.className;
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.minHeight = '70px';
+    div.style.wordBreak = 'break-word';
+
+    clonedTextarea.parentNode.replaceChild(div, clonedTextarea);
   });
 }
 
@@ -1607,6 +1680,11 @@ document.getElementById('btn-image').addEventListener('click', function() {
   btn.disabled = true;
   btn.textContent = '이미지 만드는 중...';
 
+  // 모바일에서 input에 포커스가 살아있으면 값 갱신이 지연될 수 있음 → 강제 blur
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
+
   const container = document.querySelector('.container');
   const progressEl = document.querySelector('.progress');
   const actionBar = document.querySelector('.action-bar');
@@ -1615,7 +1693,7 @@ document.getElementById('btn-image').addEventListener('click', function() {
   progressEl.style.position = 'static';
   actionBar.style.display = 'none';
 
-  // 캡처 직전 값 동기화
+  // 1차 방어: attribute 동기화
   const restorePoints = syncFormValuesToDOM();
 
   html2canvas(container, {
@@ -1624,7 +1702,15 @@ document.getElementById('btn-image').addEventListener('click', function() {
     useCORS: true,
     logging: false,
     windowWidth: container.scrollWidth,
-    windowHeight: container.scrollHeight
+    windowHeight: container.scrollHeight,
+    // 2차 방어: 클론된 DOM의 input들을 span으로 교체
+    onclone: function(clonedDoc) {
+      try {
+        replaceInputsInClone(clonedDoc);
+      } catch (e) {
+        console.error('replaceInputsInClone 에러:', e);
+      }
+    }
   }).then(function(canvas) {
     progressEl.style.position = originalProgressPosition;
     actionBar.style.display = '';
