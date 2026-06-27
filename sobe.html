@@ -48,34 +48,13 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(135deg, #F0ECFF 0%, #FDE8F2 40%, #EEF0FF 100%);
-  background-attachment: fixed;
+  background: var(--lavender);
   color: var(--text-dark);
   line-height: 1.6;
   font-size: 15px;
   padding: 32px 16px;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-}
-
-body::before, body::after {
-  content: '';
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-body::before {
-  width: 600px; height: 600px;
-  top: -200px; right: -150px;
-  background: radial-gradient(circle, rgba(233,30,120,0.08) 0%, transparent 70%);
-}
-
-body::after {
-  width: 500px; height: 500px;
-  bottom: -100px; left: -100px;
-  background: radial-gradient(circle, rgba(99,85,216,0.10) 0%, transparent 70%);
 }
 
 .container {
@@ -85,8 +64,6 @@ body::after {
   border-radius: 20px;
   padding: 40px 32px;
   box-shadow: 0 4px 32px rgba(93, 82, 201, 0.08);
-  position: relative;
-  z-index: 1;
 }
 
 .header {
@@ -808,10 +785,6 @@ body::after {
   pointer-events: none;
   z-index: 100;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  max-width: 90vw;
-  text-align: center;
-  word-break: break-word;
-  line-height: 1.4;
 }
 
 .toast.show {
@@ -1593,163 +1566,98 @@ document.getElementById('btn-reset').addEventListener('click', function() {
   location.reload();
 });
 
-/* ───── 이미지 저장 ───── */
-document.getElementById('btn-image').addEventListener('click', async function() {
+/* ───── 이미지 저장 ─────
+ * html2canvas의 알려진 이슈:
+ * input 요소의 캡처 시 입력된 .value(property)가 아니라
+ * HTML attribute의 value를 읽어 그림. 따라서 캡처 직전에
+ * 모든 input과 textarea의 value를 attribute/textContent에 동기화해야
+ * 사용자가 입력한 값이 그대로 이미지에 나타남.
+ */
+function syncFormValuesToDOM() {
+  const restorePoints = { textareas: [] };
+
+  document.querySelectorAll('input').forEach(function(input) {
+    // text/number/range 모두 attribute로 반영
+    if (input.value !== null && input.value !== undefined) {
+      input.setAttribute('value', input.value);
+    }
+  });
+
+  document.querySelectorAll('textarea').forEach(function(t) {
+    restorePoints.textareas.push({ el: t, original: t.value });
+    // textarea는 attribute가 아닌 textContent로 캡처되므로
+    t.textContent = t.value;
+  });
+
+  return restorePoints;
+}
+
+function restoreFormValues(restorePoints) {
+  // input은 attribute가 남아있어도 .value는 그대로이므로 별도 복구 불필요
+  // textarea만 textContent를 비우고 value를 복구
+  restorePoints.textareas.forEach(function(item) {
+    item.el.textContent = '';
+    item.el.value = item.original;
+  });
+}
+
+document.getElementById('btn-image').addEventListener('click', function() {
   const btn = this;
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '이미지 만드는 중...';
 
   const container = document.querySelector('.container');
-  const savedX = window.scrollX || window.pageXOffset || 0;
-  const savedY = window.scrollY || window.pageYOffset || 0;
+  const progressEl = document.querySelector('.progress');
+  const actionBar = document.querySelector('.action-bar');
 
-  function finish() {
-    window.scrollTo(savedX, savedY);
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  const originalProgressPosition = progressEl.style.position;
+  progressEl.style.position = 'static';
+  actionBar.style.display = 'none';
 
-  // 스크롤·레이아웃 반영을 위해 두 프레임 대기
-  function nextFrame() {
-    return new Promise(function(res) {
-      requestAnimationFrame(function() { requestAnimationFrame(res); });
-    });
-  }
+  // 캡처 직전 값 동기화
+  const restorePoints = syncFormValuesToDOM();
 
-  function renderAt(scale) {
-    return html2canvas(container, {
-      backgroundColor: '#FFFFFF',
-      scale: scale,
-      useCORS: true,
-      logging: false,
-      scrollX: 0,
-      scrollY: 0,
-      onclone: function(clonedDoc) {
-        // sticky 진행바 → static (상단 콘텐츠 잘림 방지) + 미지원 효과 제거(렌더 오류 방지)
-        const p = clonedDoc.querySelector('.progress');
-        if (p) {
-          p.style.position = 'static';
-          p.style.top = 'auto';
-          p.style.backdropFilter = 'none';
-          p.style.webkitBackdropFilter = 'none';
-        }
-        // 버튼 영역은 이미지에서 제외
-        const a = clonedDoc.querySelector('.action-bar');
-        if (a) a.style.display = 'none';
+  html2canvas(container, {
+    backgroundColor: '#FFFFFF',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    windowWidth: container.scrollWidth,
+    windowHeight: container.scrollHeight
+  }).then(function(canvas) {
+    progressEl.style.position = originalProgressPosition;
+    actionBar.style.display = '';
+    restoreFormValues(restorePoints);
 
-        // ── 핵심: input/textarea를 동일하게 생긴 정적 div로 치환 ──
-        // html2canvas는 input 값(특히 오른쪽 정렬된 긴 숫자, 손글씨 폰트)을 제대로 못 그려서
-        // 캡처 순간에만 일반 텍스트 박스로 바꿔 값이 정확히 보이도록 한다.
-        const liveFields = document.querySelectorAll('.container input, .container textarea');
-        const cloneFields = clonedDoc.querySelectorAll('.container input, .container textarea');
-        const TEXT_PROPS = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'color',
-          'letterSpacing', 'fontVariantNumeric',
-          'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-          'borderBottomWidth', 'borderBottomStyle', 'borderBottomColor'];
-
-        cloneFields.forEach(function(cloneEl, i) {
-          const liveEl = liveFields[i] || cloneEl;
-          const cs = window.getComputedStyle(liveEl);
-          const isTextarea = cloneEl.tagName.toLowerCase() === 'textarea';
-          const hasVal = cloneEl.value != null && String(cloneEl.value).length > 0;
-          const text = hasVal ? cloneEl.value : (isTextarea ? '' : (cloneEl.placeholder || ''));
-          const align = cs.textAlign;
-
-          const div = clonedDoc.createElement('div');
-          div.textContent = text;
-          TEXT_PROPS.forEach(function(prop) { div.style[prop] = cs[prop]; });
-          if (!hasVal && !isTextarea) div.style.color = '#9999A8'; // 미입력 시 placeholder 색
-          div.style.margin = '0';
-          div.style.background = 'transparent';
-          div.style.boxSizing = 'border-box';
-          div.style.width = liveEl.offsetWidth + 'px';
-
-          if (isTextarea) {
-            // 여러 줄: 위에서부터, 자동 줄바꿈
-            div.style.display = 'block';
-            div.style.whiteSpace = 'pre-wrap';
-            div.style.wordBreak = 'break-word';
-            div.style.lineHeight = cs.lineHeight;
-            div.style.minHeight = liveEl.offsetHeight + 'px';
-          } else {
-            // 한 줄: flex로 수직 가운데 + 정렬 보존
-            div.style.display = 'flex';
-            div.style.alignItems = 'center';
-            div.style.justifyContent = align === 'right' ? 'flex-end' : (align === 'center' ? 'center' : 'flex-start');
-            div.style.whiteSpace = 'nowrap';
-            div.style.overflow = 'hidden';
-            div.style.height = liveEl.offsetHeight + 'px';
-            div.style.flexGrow = '0';
-            div.style.flexShrink = '0';
-          }
-          if (cloneEl.parentNode) cloneEl.parentNode.replaceChild(div, cloneEl);
-        });
-      }
-    });
-  }
-
-  try {
-    // 폰트 로딩이 끝난 뒤 캡처 (미로딩 상태에서의 렌더 실패 방지, 최대 1.5초)
-    if (document.fonts && document.fonts.ready) {
-      await Promise.race([
-        document.fonts.ready,
-        new Promise(function(r) { setTimeout(r, 1500); })
-      ]);
-    }
-
-    // 반드시 최상단에서 캡처 (아래로 스크롤된 상태면 상단 ~ 세후 실수령액·목표 저축률 ~ 이 잘림)
-    window.scrollTo(0, 0);
-    await nextFrame();
-
-    // 1차는 고화질(scale 2), 실패하면 캔버스 용량 한계로 보고 scale 1로 재시도
-    let canvas;
-    try {
-      canvas = await renderAt(2);
-    } catch (e1) {
-      console.warn('scale 2 캡처 실패 → scale 1로 재시도', e1);
-      canvas = await renderAt(1);
-    }
-
-    // toDataURL 단계 실패(브라우저별 PNG 한계) 시 JPEG로 재시도
-    let dataUrl, ext;
-    try {
-      dataUrl = canvas.toDataURL('image/png');
-      ext = 'png';
-    } catch (e2) {
-      console.warn('PNG 변환 실패 → JPEG로 재시도', e2);
-      dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      ext = 'jpg';
-    }
-
+    const link = document.createElement('a');
     const today = new Date();
     const dateStr = today.getFullYear() + '-' +
                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
                    String(today.getDate()).padStart(2, '0');
-
-    const link = document.createElement('a');
-    link.download = '이번달-내돈-들여다보기_' + dateStr + '.' + ext;
-    link.href = dataUrl;
-    document.body.appendChild(link);
+    link.download = '이번달-내돈-들여다보기_' + dateStr + '.png';
+    link.href = canvas.toDataURL('image/png');
     link.click();
-    document.body.removeChild(link);
 
-    finish();
+    btn.disabled = false;
+    btn.textContent = originalText;
     showToast('이미지로 저장됐어요');
-  } catch (err) {
-    finish();
-    console.error('이미지 저장 실패:', err);
-    // 실패 원인을 화면에 그대로 노출 (모바일에서도 확인 가능하도록 길게 표시)
-    showToast('저장 실패: ' + (err && err.message ? err.message : '알 수 없는 오류'), 7000);
-  }
+  }).catch(function(err) {
+    progressEl.style.position = originalProgressPosition;
+    actionBar.style.display = '';
+    restoreFormValues(restorePoints);
+    btn.disabled = false;
+    btn.textContent = originalText;
+    showToast('저장에 실패했어요. 다시 시도해주세요');
+    console.error(err);
+  });
 });
 
-function showToast(msg, duration) {
+function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(function() { t.classList.remove('show'); }, duration || 2000);
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
 }
 
 /* ───── 초기 실행 ───── */
